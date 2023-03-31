@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
 exports.login = async (req, res) => {
-    if (!req.body.email || !req.body.password) return res.status(400).send({ message: 'Must have email and password' });
+    if (!req.body.email || !req.body.password) return res.status(400).json({ message: 'Must have email and password' });
 
     try {
         const user = {
@@ -13,7 +13,7 @@ exports.login = async (req, res) => {
             
         const result = await User.findOne(user);
 
-        if (!result) return res.status(404).send({ message: 'User not found' });
+        if (!result) return res.status(404).json({ message: 'User not found' });
         else {
             return res.status(200).json({
                 userId: result._id,
@@ -22,12 +22,12 @@ exports.login = async (req, res) => {
         }
     }
     catch (e) {
-        return res.status(500).send({ message: e.message });
+        return res.status(500).json({ message: e.message });
     }
 };
 
 exports.signup = async (req, res) => {
-    if (!req.body.email || !req.body.password) return res.status(400).send({ message: 'Must have email and password' });
+    if (!req.body.email || !req.body.password) return res.status(400).json({ message: 'Must have email and password' });
 
     try {
         const user = new User({
@@ -39,6 +39,6 @@ exports.signup = async (req, res) => {
 		return res.status(201).json({ message: 'User Created' });
     }
     catch (e) {
-        return res.status(500).send({ message: e.message });
+        return res.status(500).json({ message: e.message });
     }
 };
