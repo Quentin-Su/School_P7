@@ -26,6 +26,16 @@ exports.getBookById = async (req, res) => {
     }
 };
 
+exports.getBestBooks = async (req, res) => {
+    try {
+        const booksArray = await Book.find();
+        return res.status(200).json(booksArray.sort((a, b) => b.averageRating - a.averageRating).slice(0, 3));
+    }
+    catch (e) {
+        return res.status(500).json({ message: 'test' + e.message });
+    }
+};
+
 exports.newBook = async (req, res) => {
     try {
         const bookData = JSON.parse(req.body.book);
@@ -36,10 +46,17 @@ exports.newBook = async (req, res) => {
             imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
         });
 
-        Book.create(book);
+        const bookValidator = book.validateSync();
+        if (bookValidator) {
+            deleteFile(req.file.filename);
+            return res.status(500).json({ message: bookValidator.message });
+        };
+
+        await Book.create(book);
         res.status(201).json({ message: 'Book Created' });
     }
     catch (e) {
+        deleteFile(req.file.filename);
         return res.status(500).json({ message: e.message });
     }
 };
@@ -52,7 +69,9 @@ exports.updateBook = async (req, res) => {
             bookData.imageUrl = `${req.protocol}://${req.get('host')}/images/${req.file.filename}`;
             deleteFile(req.book.imageUrl.split('/').pop());
         }
-        await Book.findByIdAndUpdate(req.params.id, bookData);
+        delete bookData.ratings, bookData.userId;
+
+        await Book.findByIdAndUpdate(req.params.id, bookData, { runValidators: true });
 
         res.status(201).json({ message: 'Book Updated' });
     }
@@ -63,13 +82,12 @@ exports.updateBook = async (req, res) => {
 
 exports.deleteBook = async (req, res) => {
     try {
-        const book = await Book.findByIdAndDelete(req.params.id);
-        deleteFile(book.imageUrl.split('/').pop());
+        await Book.deleteOne(req.book);
+        deleteFile(req.book.imageUrl.split('/').pop());
 
         return res.status(204);
     }
     catch (e) {
-        console.log(e.message)
         return res.status(500).json({ message: e.message });
     }
 };
@@ -81,12 +99,12 @@ exports.postRatingBook = async (req, res) => {
         const book = await Book.findById(req.params.id);
         if (!book) return res.status(404).json({ message: 'Book not found' });
 
-
         book.ratings.map(elem => {
             if (elem.userId === req.auth.userId) return res.status(401).json({ message: 'already noted' });
         });
 
         const totalGrade = book.ratings.map(item => item.grade).reduce((prev, curr) => prev + curr, 0);
+        const result = ((totalGrade + req.body.rating) / (book.ratings.length + 1));
 
         const updatedBook = await Book.findOneAndUpdate({ _id: req.params.id }, {
             $push: {
@@ -96,7 +114,7 @@ exports.postRatingBook = async (req, res) => {
                 }
             },
             $set: {
-                averageRating: ((totalGrade + req.body.rating) / (book.ratings.length + 1))
+                averageRating: result % 1 === 0 ? result.toFixed(0) : result.toFixed(1)
             }
         }, { new: true });
 
@@ -108,10 +126,8 @@ exports.postRatingBook = async (req, res) => {
 };
 
 const deleteFile = (filename) => {
-    console.log(filename)
     try {
         if (!filename) return;
-
         const imagePath = path.join(__dirname, '..', 'images', filename);
 
         if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
