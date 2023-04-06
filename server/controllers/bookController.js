@@ -116,7 +116,8 @@ exports.postRatingBook = async (req, res) => {
             $set: {
                 averageRating: result % 1 === 0 ? result.toFixed(0) : result.toFixed(1)
             }
-        }, { new: true });
+        }, 
+        { new: true }, { runValidators: true });
 
         return res.status(200).json(updatedBook);
     }

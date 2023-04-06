@@ -35,14 +35,15 @@ const bookModel = mongoose.Schema({
             },
             grade: {
                 type: Number,
-                required: true
+                required: true,
+                min: 0,
+                max: 5
             }
         }
     ],
     averageRating: {
         type: Number,
         required: true,
-        default: 0
     }
 });
 
