@@ -95,6 +95,7 @@ exports.deleteBook = async (req, res) => {
 exports.postRatingBook = async (req, res) => {
     try {
         if (!req.body || !req.params) return res.status(400).json({ message: 'Missing Data' });
+        if (req.body.rating < 0 || req.body.rating > 5) return res.status(400).json({ message: 'Invalid rating' });
 
         const book = await Book.findById(req.params.id);
         if (!book) return res.status(404).json({ message: 'Book not found' });
