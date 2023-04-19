@@ -17,6 +17,8 @@ To install the dependencies for the project, run the following commands:
 > 
 > API_KEY: the secret key used to sign authentication tokens
 
+8. Modify the MongoDB database Uri present in the db.js file (in the "database" folder of the server). However, you must keep the environment variable in the same location.
+
 ## Usage
 
 ### Node Console (CMD)
